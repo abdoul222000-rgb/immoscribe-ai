@@ -1,14 +1,105 @@
 import os
 import json
-from flask import Flask, request, jsonify, render_template_string
+import sqlite3
+import datetime
+import threading
+import time
+import requests
+from flask import Flask, request, jsonify, render_template_string, redirect, session
 from google import genai
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_founder_secret_key_2026")
 
-# Récupération sécurisée de la clé Gemini via variable d'environnement (Render)
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "CLE_GEMINI_A_DEFINIR")
+FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "admin2026")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "immoscribe.db")
+
+# ----------------- BASE DE DONNÉES DE SUIVI -----------------
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS visitors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        ip TEXT,
+        user_agent TEXT,
+        path TEXT
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS generations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        property_type TEXT,
+        surface TEXT,
+        price TEXT,
+        location TEXT
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        email TEXT,
+        status TEXT,
+        event_name TEXT,
+        amount TEXT
+    )''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def log_visitor(ip, user_agent, path):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("INSERT INTO visitors (timestamp, ip, user_agent, path) VALUES (?, ?, ?, ?)",
+                  (now, ip, user_agent[:120], path))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Erreur log visitor:", e)
+
+def log_generation(prop_type, surface, price, location):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("INSERT INTO generations (timestamp, property_type, surface, price, location) VALUES (?, ?, ?, ?, ?)",
+                  (now, prop_type, surface, price, location))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Erreur log generation:", e)
+
+def log_subscription(email, status, event_name, amount="29.00 €"):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        c.execute("INSERT INTO subscriptions (timestamp, email, status, event_name, amount) VALUES (?, ?, ?, ?, ?)",
+                  (now, email, status, event_name, amount))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Erreur log subscription:", e)
+
+# ----------------- THREAD ANTI-VEILLE INTERNE -----------------
+def keep_alive_worker():
+    time.sleep(30)
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://immoscribe-ai-1.onrender.com")
+    while True:
+        try:
+            requests.get(f"{render_url}/health", timeout=10)
+        except Exception:
+            pass
+        time.sleep(600) # Ping toutes les 10 minutes
+
+t = threading.Thread(target=keep_alive_worker, daemon=True)
+t.start()
+
+# ----------------- TEMPLATE CLIENT (PAGE PRINCIPALE) -----------------
 HTML_PAGE = """<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -18,9 +109,7 @@ HTML_PAGE = """<!DOCTYPE html>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-  </style>
+  <style> body { font-family: 'Plus Jakarta Sans', sans-serif; } </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
 
@@ -38,11 +127,11 @@ HTML_PAGE = """<!DOCTYPE html>
       </div>
 
       <div class="flex items-center gap-3">
-        <div id="trialBadge" class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Essai gratuit actif (5 jours)</span>
         </div>
-        <a id="lemonSubscribeBtn" href="#upgradeModal" onclick="openUpgradeModal()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition shadow-sm">
+        <a href="#upgradeModal" onclick="openUpgradeModal()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition shadow-sm">
           Mon Abonnement
         </a>
       </div>
@@ -51,8 +140,6 @@ HTML_PAGE = """<!DOCTYPE html>
 
   <!-- Main Container -->
   <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-
-    <!-- Top Banner -->
     <div class="mb-8 text-center sm:text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Rédigez vos annonces en 10 secondes chrono</h1>
@@ -132,14 +219,13 @@ HTML_PAGE = """<!DOCTYPE html>
         </div>
 
         <button id="btnSubmit" onclick="generate()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition transform active:scale-[0.99]">
-          <svg id="sparkleIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
           <span id="btnText">Générer les 3 annonces IA</span>
         </button>
       </div>
 
-      <!-- Right Column: Generated Listings Output -->
+      <!-- Right Column: Output -->
       <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col justify-between">
-        
         <div>
           <!-- Tab Navigation -->
           <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
@@ -163,48 +249,35 @@ HTML_PAGE = """<!DOCTYPE html>
 
           <!-- Output Box -->
           <div class="relative min-h-[350px]">
-            <!-- Spinner -->
             <div id="loader" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3 z-10">
               <div class="w-9 h-9 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <p class="text-xs font-medium text-blue-300">Rédaction par l'IA en cours (Gemini 3.5 Flash)...</p>
+              <p class="text-xs font-medium text-blue-300">Rédaction par l'IA en cours...</p>
             </div>
 
-            <!-- Content Panes -->
             <div id="pane-lbc" class="tab-pane text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]">
-              <span class="text-slate-500 italic">Remplissez les informations du mandat à gauche et cliquez sur « Générer les 3 annonces IA » pour obtenir le texte rédigé en direct.</span>
+              <span class="text-slate-500 italic">Remplissez les informations du mandat à gauche et cliquez sur « Générer les 3 annonces IA ».</span>
             </div>
 
-            <div id="pane-seloger" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]">
-            </div>
+            <div id="pane-seloger" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]"></div>
 
-            <div id="pane-social" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]">
-            </div>
+            <div id="pane-social" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]"></div>
           </div>
         </div>
 
-        <!-- Footer Value Prop -->
         <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <span>Temps de rédaction : <strong>~2 secondes</strong></span>
-          <span class="text-blue-400">Gagnez jusqu'à 3h par semaine</span>
+          <a href="/founder" class="text-slate-600 hover:text-slate-400 text-[11px]">Espace Fondateur</a>
         </div>
-
       </div>
-
     </div>
-
   </main>
 
   <!-- Modal Abonnement Lemon Squeezy -->
   <div id="upgradeModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
-      <div class="w-12 h-12 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center mx-auto text-xl">
-        💳
-      </div>
+      <div class="w-12 h-12 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center mx-auto text-xl">💳</div>
       <h3 class="text-xl font-extrabold text-white">Essai Gratuit de 5 Jours</h3>
-      <p class="text-sm text-slate-300">
-        Activez votre compte négociateur en renseignant votre carte. 
-        <strong>Vous ne payez rien aujourd'hui (0,00 €).</strong>
-      </p>
+      <p class="text-sm text-slate-300">Activez votre compte négociateur en renseignant votre carte. <strong>Vous ne payez rien aujourd'hui (0,00 €).</strong></p>
 
       <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-left space-y-2 text-xs">
         <div class="flex justify-between text-slate-300">
@@ -221,20 +294,16 @@ HTML_PAGE = """<!DOCTYPE html>
         </div>
       </div>
 
-      <!-- Lien vers le checkout Lemon Squeezy configuré -->
-      <a id="btnLemonCheckout" href="https://jobcatch-ai.lemonsqueezy.com/checkout/buy/9c606a64-2673-4eed-995e-c502f75811b6" target="_blank" class="block w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-500/25">
+      <a href="https://jobcatch-ai.lemonsqueezy.com/checkout/buy/9c606a64-2673-4eed-995e-c502f75811b6" target="_blank" class="block w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-500/25">
         Commencer l'essai gratuit de 5 jours (Carte requise)
       </a>
 
-      <button onclick="closeUpgradeModal()" class="text-xs text-slate-400 hover:text-white">
-        Fermer
-      </button>
+      <button onclick="closeUpgradeModal()" class="text-xs text-slate-400 hover:text-white">Fermer</button>
     </div>
   </div>
 
   <script>
     let activeTab = 'lbc';
-
     function setTab(tab) {
       activeTab = tab;
       ['lbc', 'seloger', 'social'].forEach(t => {
@@ -286,7 +355,6 @@ HTML_PAGE = """<!DOCTYPE html>
           body: JSON.stringify({ propertyType, surface, price, location, dpe, ges, highlights })
         });
         const data = await res.json();
-        
         if (data.error) {
           alert('Erreur: ' + data.error);
         } else {
@@ -311,21 +379,250 @@ HTML_PAGE = """<!DOCTYPE html>
       setTimeout(() => copyText.textContent = 'Copier', 2000);
     }
 
-    function openUpgradeModal() {
-      document.getElementById('upgradeModal').classList.remove('hidden');
-    }
-
-    function closeUpgradeModal() {
-      document.getElementById('upgradeModal').classList.add('hidden');
-    }
+    function openUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); }
+    function closeUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
   </script>
 </body>
-</html>
-"""
+</html>"""
 
+# ----------------- TEMPLATE ESPACE FOUNDER (DASHBOARD) -----------------
+FOUNDER_PAGE = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Fondateur - ImmoScribe AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style> body { font-family: 'Plus Jakarta Sans', sans-serif; } </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased p-4 sm:p-8">
+
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- Top Nav -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-2">
+          👑 Espace Fondateur Privé
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Tableau de Bord ImmoScribe AI</h1>
+        <p class="text-sm text-slate-400">Contrôle complet des visiteurs, mandats rédigés et abonnements Lemon Squeezy.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/" target="_blank" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition">
+          Voir le site client ↗
+        </a>
+        <a href="/founder/logout" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-white transition">
+          Déconnexion
+        </a>
+      </div>
+    </div>
+
+    <!-- 4 Métriques Clés -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <span class="text-xs text-slate-400 font-medium">👀 Visites Totales</span>
+        <div class="text-3xl font-extrabold text-white mt-1">{{ total_visits }}</div>
+        <span class="text-[11px] text-emerald-400 font-medium">Temps réel</span>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <span class="text-xs text-slate-400 font-medium">⚡ Mandats Générés</span>
+        <div class="text-3xl font-extrabold text-blue-400 mt-1">{{ total_gens }}</div>
+        <span class="text-[11px] text-slate-400 font-medium">Par l'IA Gemini</span>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <span class="text-xs text-slate-400 font-medium">💳 Abonnés (Essai ou Payant)</span>
+        <div class="text-3xl font-extrabold text-emerald-400 mt-1">{{ total_subs }}</div>
+        <span class="text-[11px] text-slate-400 font-medium">Lemon Squeezy</span>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+        <span class="text-xs text-slate-400 font-medium">💰 Revenu Estimé</span>
+        <div class="text-3xl font-extrabold text-amber-400 mt-1">{{ total_subs * 29 }} €</div>
+        <span class="text-[11px] text-slate-400 font-medium">≈ {{ (total_subs * 29 * 655.957)|round|int }} FCFA / mois</span>
+      </div>
+    </div>
+
+    <!-- Alert / Webhook URL Info -->
+    <div class="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-blue-200">
+      <div>
+        <strong class="text-white block mb-0.5">🔗 URL Webhook Lemon Squeezy pour enregistrer chaque client en direct :</strong>
+        <code class="bg-slate-950 px-2 py-1 rounded text-blue-300 font-mono text-[11px]">https://immoscribe-ai-1.onrender.com/api/webhook</code>
+      </div>
+      <a href="https://app.lemonsqueezy.com/settings/webhooks" target="_blank" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition flex-shrink-0">
+        Configurer Webhook Lemon Squeezy ↗
+      </a>
+    </div>
+
+    <!-- 2 Colonnes : Abonnés & Derniers Visiteurs -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Liste des Abonnés -->
+      <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>💳</span> Abonnés & Clients
+          </h2>
+          <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-mono">{{ subs|length }} clients</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          {% if subs %}
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800/80">
+                <th class="pb-2 font-medium">Email</th>
+                <th class="pb-2 font-medium">Statut</th>
+                <th class="pb-2 font-medium">Montant</th>
+                <th class="pb-2 font-medium">Date</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+              {% for s in subs %}
+              <tr>
+                <td class="py-2.5 font-medium text-white">{{ s[2] }}</td>
+                <td class="py-2.5">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                    {{ s[3] }}
+                  </span>
+                </td>
+                <td class="py-2.5 text-slate-300">{{ s[5] }}</td>
+                <td class="py-2.5 text-slate-500 font-mono text-[11px]">{{ s[1] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-center py-8 text-slate-500 text-xs italic">
+            Aucun abonnement pour l'instant. Dès qu'un client s'inscrit sur Lemon Squeezy, il apparaîtra ici automatiquement !
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Derniers Visiteurs & Mandats générés -->
+      <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>⚡</span> Derniers Mandats Rédigés par les Visiteurs
+          </h2>
+          <span class="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded font-mono">{{ gens|length }} récents</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          {% if gens %}
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800/80">
+                <th class="pb-2 font-medium">Bien</th>
+                <th class="pb-2 font-medium">Ville</th>
+                <th class="pb-2 font-medium">Prix</th>
+                <th class="pb-2 font-medium">Date</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60">
+              {% for g in gens %}
+              <tr>
+                <td class="py-2.5 font-medium text-white">{{ g[2] }} ({{ g[3] }})</td>
+                <td class="py-2.5 text-slate-300">{{ g[5] }}</td>
+                <td class="py-2.5 text-emerald-400 font-semibold">{{ g[4] }}</td>
+                <td class="py-2.5 text-slate-500 font-mono text-[11px]">{{ g[1] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-center py-8 text-slate-500 text-xs italic">
+            Aucun mandat rédigé pour le moment.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Derniers Visiteurs Log -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+      <h2 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+        <span>📍</span> Journal des 15 dernières visites
+      </h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="text-slate-400 border-b border-slate-800/80">
+              <th class="pb-2 font-medium">Date & Heure</th>
+              <th class="pb-2 font-medium">Adresse IP</th>
+              <th class="pb-2 font-medium">Page</th>
+              <th class="pb-2 font-medium">Appareil (Navigateur)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60">
+            {% for v in visitors %}
+            <tr>
+              <td class="py-2 text-slate-300 font-mono text-[11px]">{{ v[1] }}</td>
+              <td class="py-2 text-blue-400 font-mono">{{ v[2] }}</td>
+              <td class="py-2 text-slate-400">{{ v[4] }}</td>
+              <td class="py-2 text-slate-500 truncate max-w-[280px]">{{ v[3] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>"""
+
+LOGIN_PAGE = """<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion Fondateur - ImmoScribe AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-sm w-full space-y-5 shadow-2xl">
+    <div class="text-center">
+      <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto text-xl font-bold mb-3">👑</div>
+      <h1 class="text-xl font-extrabold text-white">Espace Fondateur</h1>
+      <p class="text-xs text-slate-400 mt-1">Accès sécurisé pour le propriétaire d'ImmoScribe</p>
+    </div>
+
+    {% if error %}
+    <div class="bg-red-500/10 border border-red-500/30 text-red-300 text-xs p-3 rounded-xl text-center">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/founder/login" class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Mot de passe Fondateur</label>
+        <input type="password" name="password" required placeholder="Entrez votre mot de passe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+      </div>
+
+      <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-500/25">
+        Se connecter au Dashboard
+      </button>
+    </form>
+  </div>
+</body>
+</html>"""
+
+# ----------------- ROUTES -----------------
 @app.route("/")
 def index():
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
+    log_visitor(ip, request.headers.get("User-Agent", "Inconnu"), "/")
     return render_template_string(HTML_PAGE)
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "time": datetime.datetime.now().isoformat()})
 
 @app.route("/api/generate", methods=["POST"])
 def generate():
@@ -337,6 +634,8 @@ def generate():
     dpe = data.get("dpe", "C")
     ges = data.get("ges", "A")
     highlights = data.get("highlights", "")
+
+    log_generation(prop_type, surface, price, location)
 
     prompt = f"""Tu es le meilleur copywriter spécialisé dans l'immobilier français haut de gamme et transaction rapide.
 Génère 3 versions d'annonces immobilières vendeuses et conformes pour ce bien :
@@ -365,11 +664,9 @@ Réponds STRICTEMENT avec l'objet JSON, sans texte d'introduction ni balises mar
                 contents=prompt
             )
             raw_text = response.text.strip()
-            # Nettoyage si le modèle renvoie des balises ```json
             if raw_text.startswith("```"):
                 lines = raw_text.splitlines()
                 raw_text = "\n".join(lines[1:-1] if lines[-1].startswith("```") else lines[1:])
-            
             parsed = json.loads(raw_text)
             return jsonify(parsed)
         except Exception as e:
@@ -377,6 +674,73 @@ Réponds STRICTEMENT avec l'objet JSON, sans texte d'introduction ni balises mar
             continue
 
     return jsonify({"error": f"Erreur de génération : {str(last_error)}"}), 500
+
+# ----------------- WEBHOOK LEMON SQUEEZY -----------------
+@app.route("/api/webhook", methods=["POST"])
+def webhook():
+    try:
+        data = request.json or {}
+        event_name = data.get("meta", {}).get("event_name", "evenement")
+        user_email = data.get("data", {}).get("attributes", {}).get("user_email") or data.get("data", {}).get("attributes", {}).get("customer_email") or "client@email.com"
+        status = data.get("data", {}).get("attributes", {}).get("status", "actif")
+        
+        log_subscription(user_email, status, event_name, "29.00 €")
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        print("Erreur webhook:", e)
+        return jsonify({"error": str(e)}), 400
+
+# ----------------- ESPACE FOUNDER -----------------
+@app.route("/founder/login", methods=["GET", "POST"])
+def founder_login():
+    if request.method == "POST":
+        pwd = request.form.get("password")
+        if pwd == FOUNDER_PASSWORD:
+            session["founder_logged_in"] = True
+            return redirect("/founder")
+        return render_template_string(LOGIN_PAGE, error="Mot de passe incorrect.")
+    return render_template_string(LOGIN_PAGE)
+
+@app.route("/founder/logout")
+def founder_logout():
+    session.pop("founder_logged_in", None)
+    return redirect("/founder/login")
+
+@app.route("/founder")
+def founder_dashboard():
+    if not session.get("founder_logged_in"):
+        return redirect("/founder/login")
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM visitors")
+    total_visits = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM generations")
+    total_gens = c.fetchone()[0]
+
+    c.execute("SELECT COUNT(*) FROM subscriptions")
+    total_subs = c.fetchone()[0]
+
+    c.execute("SELECT * FROM subscriptions ORDER BY id DESC LIMIT 20")
+    subs = c.fetchall()
+
+    c.execute("SELECT * FROM generations ORDER BY id DESC LIMIT 10")
+    gens = c.fetchall()
+
+    c.execute("SELECT * FROM visitors ORDER BY id DESC LIMIT 15")
+    visitors = c.fetchall()
+    conn.close()
+
+    return render_template_string(
+        FOUNDER_PAGE,
+        total_visits=total_visits,
+        total_gens=total_gens,
+        total_subs=total_subs,
+        subs=subs,
+        gens=gens,
+        visitors=visitors
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
