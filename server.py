@@ -11,7 +11,7 @@ from google import genai
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_founder_secret_key_2026")
 
-FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "admin2026")
+FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "@Abdoul20017")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
