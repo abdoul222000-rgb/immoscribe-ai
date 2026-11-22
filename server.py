@@ -623,6 +623,8 @@ LOGIN_PAGE = """<!DOCTYPE html>
 @app.route("/api/index.py")
 @app.route("/api/index")
 def index():
+    if request.path == "/api/debug" or request.args.get("debug"):
+        return jsonify(dict(request.headers))
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
     log_visitor(ip, request.headers.get("User-Agent", "Inconnu"), "/")
     return render_template_string(HTML_PAGE, whop_url=WHOP_CHECKOUT_URL)
