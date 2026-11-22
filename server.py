@@ -815,10 +815,12 @@ LOGIN_PAGE = """<!DOCTYPE html>
 </html>"""
 
 # ----------------- ROUTES -----------------
-@app.route("/")
-@app.route("/api/index.py")
-@app.route("/api/index")
+@app.route("/", methods=["GET", "POST"])
+@app.route("/api/index.py", methods=["GET", "POST"])
+@app.route("/api/index", methods=["GET", "POST"])
 def index():
+    if request.method == "POST":
+        return generate()
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
     log_visitor(ip, request.headers.get("User-Agent", "Inconnu"), "/")
     return render_template_string(HTML_PAGE, whop_url=WHOP_CHECKOUT_URL)
