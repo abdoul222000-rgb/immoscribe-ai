@@ -651,7 +651,7 @@ HTML_PAGE = """<!DOCTYPE html>
       btn.disabled = true;
 
       try {
-        const res = await fetch('/api/generate', {
+        const res = await fetch('/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ propertyType, surface, price, location, dpe, ges, highlights })
@@ -827,6 +827,7 @@ def index():
 def health():
     return jsonify({"status": "ok", "time": datetime.datetime.now().isoformat()})
 
+@app.route("/generate", methods=["POST", "OPTIONS"])
 @app.route("/api/generate", methods=["POST", "OPTIONS"])
 @app.route("/api/generate/", methods=["POST", "OPTIONS"])
 def generate():
