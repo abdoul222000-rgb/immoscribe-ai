@@ -18,10 +18,12 @@ class VercelPathMiddleware:
             params = urllib.parse.parse_qs(query)
             if '__path__' in params:
                 raw_path = params['__path__'][0]
-                # Normalize path: remove extra slashes and make sure it starts with single /
-                environ['PATH_INFO'] = '/' + raw_path.strip().lstrip('/')
+                cleaned = '/' + raw_path.strip().lstrip('/')
+                environ['PATH_INFO'] = cleaned
                 clean_params = {k: v for k, v in params.items() if k != '__path__'}
                 environ['QUERY_STRING'] = urllib.parse.urlencode(clean_params, doseq=True)
+        elif environ.get('PATH_INFO', '') in ('/api/index.py', '/api/index', ''):
+            environ['PATH_INFO'] = '/'
         return self.wsgi_app(environ, start_response)
 
 flask_app.wsgi_app = VercelPathMiddleware(flask_app.wsgi_app)
