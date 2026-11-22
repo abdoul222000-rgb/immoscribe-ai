@@ -1,25 +1,19 @@
 import sys
 import os
-import urllib.parse
+import json
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from server import app
+from server import app as flask_app
 
-class VercelPathMiddleware:
-    def __init__(self, wsgi_app):
-        self.wsgi_app = wsgi_app
-
-    def __call__(self, environ, start_response):
-        query = environ.get('QUERY_STRING', '')
-        if '__path__=' in query:
-            params = urllib.parse.parse_qs(query)
-            if '__path__' in params:
-                environ['PATH_INFO'] = params['__path__'][0]
-                clean_params = {k: v for k, v in params.items() if k != '__path__'}
-                environ['QUERY_STRING'] = urllib.parse.urlencode(clean_params, doseq=True)
-        return self.wsgi_app(environ, start_response)
-
-app.wsgi_app = VercelPathMiddleware(app.wsgi_app)
+def app(environ, start_response):
+    if environ.get('PATH_INFO') == '/dump-environ' or 'dump=1' in environ.get('QUERY_STRING', ''):
+        data = {k: str(v) for k, v in environ.items() if isinstance(v, (str, int, float, bool))}
+        res = json.dumps(data, indent=2).encode('utf-8')
+        start_response('200 OK', [('Content-Type', 'application/json')])
+        return [res]
+    
+    # Normal request
+    return flask_app(environ, start_response)
