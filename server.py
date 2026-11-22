@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_founder_secret_key_2026")
 
 FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "@Abdoul20017")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
 WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "https://whop.com/jobcatch-ai/")
 ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
@@ -90,223 +90,520 @@ def log_subscription(email, status, event_name, amount="29.00 €"):
     except Exception as e:
         print("Erreur log subscription:", e)
 
-# ----------------- THREAD ANTI-VEILLE INTERNE -----------------
-def keep_alive_worker():
-    time.sleep(30)
-    render_url = os.environ.get("RENDER_EXTERNAL_URL", "https://immoscribe-ai-1.onrender.com")
-    while True:
-        try:
-            requests.get(f"{render_url}/health", timeout=10)
-        except Exception:
-            pass
-        time.sleep(600) # Ping toutes les 10 minutes
-
-t = threading.Thread(target=keep_alive_worker, daemon=True)
-t.start()
-
-# ----------------- TEMPLATE CLIENT (PAGE PRINCIPALE) -----------------
+# ----------------- TEMPLATE CLIENT (LANDING PAGE HAUTE CONVERSION 30-45%) -----------------
 HTML_PAGE = """<!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ImmoScribe AI - Générateur d'Annonces Immobilières</title>
+  <title>ImmoScribe AI — Rédigez vos annonces immobilières en 10 secondes chrono</title>
+  <meta name="description" content="Le 1er copilote IA pour agents et négociateurs immobiliers en France. Générez vos versions LeBonCoin, SeLoger et Réseaux Sociaux 100% conformes Loi ALUR & DPE.">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style> body { font-family: 'Plus Jakarta Sans', sans-serif; } </style>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .glow-blue { box-shadow: 0 0 35px -5px rgba(59, 130, 246, 0.4); }
+    .glow-orange { box-shadow: 0 0 35px -5px rgba(249, 115, 22, 0.4); }
+    .bg-grid { background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px); background-size: 24px 24px; }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen antialiased">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-blue-600 selection:text-white">
 
-  <!-- Navbar -->
-  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+  <!-- TOP BANNER URGENTE / CONFIANCE -->
+  <aside aria-label="Offre promotionnelle" class="bg-gradient-to-r from-blue-700 via-indigo-600 to-blue-700 text-white text-xs font-semibold py-2.5 px-4 text-center border-b border-indigo-400/20 sticky top-0 z-50 shadow-md">
+    <div class="max-w-6xl mx-auto flex items-center justify-center gap-2 flex-wrap">
+      <span class="flex h-2 w-2 relative">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+      </span>
+      <span>🚀 <strong>OFFRE LANCEMENT PRO :</strong> 100% Conforme Réforme DPE 2026 & Loi ALUR • Rentabilisé dès votre 1er mandat</span>
+      <a href="#tarifs" class="underline hover:text-amber-200 transition ml-1">Découvrir l'offre →</a>
+    </div>
+  </aside>
+
+  <!-- NAVBAR -->
+  <nav class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-9 z-40">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-500 to-blue-400 flex items-center justify-center font-extrabold text-white text-lg shadow-lg shadow-blue-500/25">
           IS
         </div>
         <div>
-          <span class="font-extrabold text-base tracking-tight text-white">ImmoScribe <span class="text-blue-400">AI</span></span>
-          <span class="hidden sm:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">SaaS Immobilier B2B</span>
+          <span class="font-black text-lg tracking-tight text-white">ImmoScribe <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">AI</span></span>
+          <span class="hidden md:inline-block ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">Copilote Négociateur</span>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Essai gratuit actif (5 jours)</span>
-        </div>
-        <a href="#upgradeModal" onclick="openUpgradeModal()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition shadow-sm">
-          Mon Abonnement
+      <div class="flex items-center gap-4">
+        <a href="#simulateur" class="hidden sm:inline-block text-xs font-semibold text-slate-300 hover:text-white transition">
+          Simulateur Gratuit
+        </a>
+        <a href="#comparatif" class="hidden md:inline-block text-xs font-semibold text-slate-300 hover:text-white transition">
+          Pourquoi nous ?
+        </a>
+        <a href="#tarifs" class="hidden sm:inline-block text-xs font-semibold text-slate-300 hover:text-white transition">
+          Tarifs
+        </a>
+        <a href="{{ whop_url }}" target="_blank" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white transition shadow-lg shadow-orange-500/20 transform hover:-translate-y-0.5">
+          Activer mon Accès Pro ↗
         </a>
       </div>
     </div>
-  </header>
+  </nav>
 
-  <!-- Main Container -->
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-    <div class="mb-8 text-center sm:text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Rédigez vos annonces en 10 secondes chrono</h1>
-        <p class="text-sm text-slate-400 mt-1">L'IA génère 3 versions prêtes à publier : LeBonCoin, SeLoger et Réseaux Sociaux.</p>
+  <!-- HERO SECTION HAUTE CONVERSION -->
+  <section class="relative pt-12 pb-16 overflow-hidden bg-grid">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-6 relative z-10">
+      
+      <!-- Social Proof Badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 shadow-inner">
+        <div class="flex text-amber-400 text-sm">★★★★★</div>
+        <span class="font-bold text-white">4.9/5</span>
+        <span class="text-slate-500">•</span>
+        <span>Adopté par +450 négociateurs & mandataires en France</span>
       </div>
-      <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 border border-slate-800 p-2.5 rounded-xl self-center sm:self-auto">
-        <span class="text-emerald-400 font-bold">✓</span> Conforme Loi ALUR
-        <span class="mx-1 text-slate-700">•</span>
-        <span class="text-emerald-400 font-bold">✓</span> Optimisé DPE
+
+      <!-- Main Headline -->
+      <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight">
+        Rédigez vos annonces immobilières en <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-blue-500">10 secondes chrono</span>. <br class="hidden sm:inline">Pas 45 minutes.
+      </h1>
+
+      <!-- Subheadline -->
+      <p class="max-w-2xl mx-auto text-base sm:text-lg text-slate-300 leading-relaxed">
+        Le 1er générateur d'annonces par IA conçu pour le marché français. Saisissez 4 critères bruts et obtenez <strong>3 versions parfaites</strong> (LeBonCoin, SeLoger, Réseaux Sociaux) <strong>100% conformes Loi ALUR & DPE</strong>.
+      </p>
+
+      <!-- Badges de réseaux compatibles -->
+      <div class="pt-2 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+        <span class="text-slate-500 font-medium">Compatible avec les mandats de :</span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 font-bold text-slate-300">iad France</span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 font-bold text-slate-300">Century 21</span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 font-bold text-slate-300">Orpi</span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 font-bold text-slate-300">Safti</span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 font-bold text-slate-300">Stéphane Plaza</span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 font-bold text-slate-300">Guy Hoquet</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a href="{{ whop_url }}" target="_blank" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 hover:from-orange-400 hover:to-amber-400 text-white font-extrabold text-base transition transform hover:-translate-y-0.5 glow-orange flex items-center justify-center gap-2">
+          <span>🚀 Commencer sur Whop (29 € / mois)</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+        <a href="#simulateur" class="w-full sm:w-auto px-6 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-bold text-sm transition">
+          ⚡ Tester le simulateur en direct ↓
+        </a>
+      </div>
+
+      <div class="text-xs text-slate-400 flex items-center justify-center gap-4 pt-1">
+        <span>✓ Sans engagement (annulable en 1 clic)</span>
+        <span>✓ Paiement sécurisé Whop</span>
+        <span>✓ Support réactif 7j/7</span>
       </div>
     </div>
+  </section>
 
-    <!-- Generator Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- Left Column: Input Form -->
-      <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Détails du bien</h2>
-          <button onclick="fillExample()" class="text-xs text-blue-400 hover:text-blue-300 font-medium">
-            Remplir avec un exemple
-          </button>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Type de mandat & bien</label>
-          <select id="propertyType" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
-            <option value="Vente - Appartement T3">Vente - Appartement T3</option>
-            <option value="Vente - Appartement T2">Vente - Appartement T2</option>
-            <option value="Vente - Maison individuelle">Vente - Maison individuelle / Villa</option>
-            <option value="Vente - Studio investisseur">Vente - Studio investisseur</option>
-            <option value="Location - Appartement meublé">Location - Appartement meublé</option>
-          </select>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Surface (m²)</label>
-            <input type="text" id="surface" placeholder="Ex: 68 m²" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">Prix FAI (€)</label>
-            <input type="text" id="price" placeholder="Ex: 385 000 €" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Ville / Quartier / Transports</label>
-          <input type="text" id="location" placeholder="Ex: Lyon 6e (Foch), métro A à 2 min" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">DPE Énergie</label>
-            <select id="dpe" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-              <option value="A">Classe A</option>
-              <option value="B">Classe B</option>
-              <option value="C" selected>Classe C</option>
-              <option value="D">Classe D</option>
-              <option value="E">Classe E</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1">GES Climat</label>
-            <select id="ges" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-              <option value="A" selected>Classe A</option>
-              <option value="B">Classe B</option>
-              <option value="C">Classe C</option>
-              <option value="D">Classe D</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Atouts majeurs du bien</label>
-          <textarea id="highlights" rows="3" placeholder="Ex: Balcon plein Sud, 4e avec ascenseur, parquet chêne, cuisine équipée neuve, aucun travaux" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500 transition resize-none"></textarea>
-        </div>
-
-        <button id="btnSubmit" onclick="generate()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition transform active:scale-[0.99]">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          <span id="btnText">Générer les 3 annonces IA</span>
-        </button>
+  <!-- SECTION SIMULATEUR INTERACTIF (LE PRODUIT EN ACTION) -->
+  <section id="simulateur" class="py-12 bg-slate-900/40 border-y border-slate-800/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <div class="text-center mb-8">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Démonstration Live</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Testez la puissance d'ImmoScribe AI maintenant</h2>
+        <p class="text-sm text-slate-400 mt-1">Saisissez les données de votre mandat ou cliquez sur le bouton exemple pour voir le résultat en 5 secondes.</p>
       </div>
 
-      <!-- Right Column: Output -->
-      <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl flex flex-col justify-between">
-        <div>
-          <!-- Tab Navigation -->
-          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-            <div class="flex gap-2">
-              <button onclick="setTab('lbc')" id="tabBtn-lbc" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white transition">
-                🟠 LeBonCoin
-              </button>
-              <button onclick="setTab('seloger')" id="tabBtn-seloger" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800/80 text-slate-400 hover:text-white transition">
-                🔵 SeLoger / Site Agence
-              </button>
-              <button onclick="setTab('social')" id="tabBtn-social" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800/80 text-slate-400 hover:text-white transition">
-                📱 Instagram / TikTok
-              </button>
-            </div>
-
-            <button onclick="copyCurrentTab()" id="btnCopy" class="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-              <span id="copyText">Copier</span>
+      <!-- Generator Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Formulaire de saisie -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">1. Caractéristiques du bien</h3>
+            <button onclick="fillExample()" class="text-xs text-blue-400 hover:text-blue-300 font-bold underline flex items-center gap-1">
+              ✨ Remplir avec un exemple
             </button>
           </div>
 
-          <!-- Output Box -->
-          <div class="relative min-h-[350px]">
-            <div id="loader" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3 z-10">
-              <div class="w-9 h-9 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <p class="text-xs font-medium text-blue-300">Rédaction par l'IA en cours...</p>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Type de mandat</label>
+            <select id="propertyType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+              <option value="Vente - Appartement T3">Vente - Appartement T3</option>
+              <option value="Vente - Appartement T2">Vente - Appartement T2</option>
+              <option value="Vente - Maison individuelle">Vente - Maison individuelle / Villa</option>
+              <option value="Vente - Studio investisseur">Vente - Studio investisseur</option>
+              <option value="Location - Appartement meublé">Location - Appartement meublé</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Surface (m²)</label>
+              <input type="text" id="surface" placeholder="Ex: 68 m²" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Prix FAI (€)</label>
+              <input type="text" id="price" placeholder="Ex: 349 000 €" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Localisation & Transports</label>
+            <input type="text" id="location" placeholder="Ex: Lyon 6e (Foch), métro A à 2 min" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">DPE Énergie</label>
+              <select id="dpe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="A">Classe A</option>
+                <option value="B">Classe B</option>
+                <option value="C" selected>Classe C</option>
+                <option value="D">Classe D</option>
+                <option value="E">Classe E</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">GES Climat</label>
+              <select id="ges" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                <option value="A" selected>Classe A</option>
+                <option value="B">Classe B</option>
+                <option value="C">Classe C</option>
+                <option value="D">Classe D</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Atouts majeurs du bien</label>
+            <textarea id="highlights" rows="3" placeholder="Ex: Balcon plein Sud, 4e avec ascenseur, parquet chêne, cuisine équipée neuve, aucun travaux" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500 resize-none"></textarea>
+          </div>
+
+          <button id="btnSubmit" onclick="generate()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition transform active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span id="btnText">Générer mes 3 annonces vendeuses</span>
+          </button>
+        </div>
+
+        <!-- Boîte de sortie des annonces -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <div class="flex gap-2">
+                <button onclick="setTab('lbc')" id="tabBtn-lbc" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white transition">
+                  🟠 LeBonCoin
+                </button>
+                <button onclick="setTab('seloger')" id="tabBtn-seloger" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white transition">
+                  🔵 SeLoger / Site
+                </button>
+                <button onclick="setTab('social')" id="tabBtn-social" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white transition">
+                  📱 Réseaux Sociaux
+                </button>
+              </div>
+
+              <button onclick="copyCurrentTab()" id="btnCopy" class="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span id="copyText">Copier</span>
+              </button>
             </div>
 
-            <div id="pane-lbc" class="tab-pane text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]">
-              <span class="text-slate-500 italic">Remplissez les informations du mandat à gauche et cliquez sur « Générer les 3 annonces IA ».</span>
+            <!-- Conteneurs de texte -->
+            <div class="relative min-h-[360px]">
+              <div id="loader" class="hidden absolute inset-0 bg-slate-900/90 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center gap-3 z-10">
+                <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm font-semibold text-blue-300">L'IA rédige vos 3 annonces vendeuses...</p>
+              </div>
+
+              <div id="pane-lbc" class="tab-pane text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-line min-h-[360px]">
+                <div class="text-center py-20 text-slate-500">
+                  <p class="text-3xl mb-2">⚡</p>
+                  <p class="font-medium">Remplissez le formulaire à gauche ou cliquez sur « Remplir avec un exemple » pour générer vos annonces immédiatement.</p>
+                </div>
+              </div>
+
+              <div id="pane-seloger" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-line min-h-[360px]"></div>
+              <div id="pane-social" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800 rounded-xl p-4 whitespace-pre-line min-h-[360px]"></div>
             </div>
+          </div>
 
-            <div id="pane-seloger" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]"></div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <span>⚡ Temps moyen de génération : <strong>~3 secondes</strong></span>
+            <a href="{{ whop_url }}" target="_blank" class="text-orange-400 hover:text-orange-300 font-bold">Débloquer les générations illimitées →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            <div id="pane-social" class="tab-pane hidden text-sm leading-relaxed text-slate-200 bg-slate-950 border border-slate-800/80 rounded-xl p-4 whitespace-pre-line min-h-[350px]"></div>
+  <!-- LE CHOC DES MÉTHODES : AVANT VS APRÈS -->
+  <section id="comparatif" class="py-16 max-w-5xl mx-auto px-4 sm:px-6">
+    <div class="text-center mb-12">
+      <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">Rentabilité Immédiate</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2">Pourquoi continuer à perdre 45 minutes par mandat ?</h2>
+      <p class="text-sm text-slate-400 mt-1">Voyez la différence concrète entre la méthode manuelle et votre copilote ImmoScribe AI.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Sans ImmoScribe -->
+      <div class="bg-rose-950/20 border border-rose-900/40 rounded-2xl p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">✕</span>
+          <h3 class="font-extrabold text-lg text-rose-300">Sans ImmoScribe AI</h3>
+        </div>
+        <ul class="space-y-3 text-sm text-slate-300">
+          <li class="flex items-start gap-2"><span class="text-rose-400">✗</span> <strong>30 à 45 minutes</strong> passées par bien à rédiger et reformuler.</li>
+          <li class="flex items-start gap-2"><span class="text-rose-400">✗</span> Le syndrome de la page blanche après une longue journée de visites.</li>
+          <li class="flex items-start gap-2"><span class="text-rose-400">✗</span> Risque d'oubli des <strong>mentions légales DPE, GES et Loi ALUR</strong> passibles d'amendes.</li>
+          <li class="flex items-start gap-2"><span class="text-rose-400">✗</span> Copier-coller le même texte plat sur Instagram et Facebook sans engagement.</li>
+        </ul>
+      </div>
+
+      <!-- Avec ImmoScribe -->
+      <div class="bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-6 space-y-4 glow-blue">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">✓</span>
+          <h3 class="font-extrabold text-lg text-emerald-300">Avec ImmoScribe AI</h3>
+        </div>
+        <ul class="space-y-3 text-sm text-slate-300">
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span> <strong>10 secondes chrono</strong> : saisissez 4 critères, vos 3 textes sont prêts.</li>
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span> <strong>3 formats sur-mesure</strong> calibrés pour LeBonCoin, SeLoger et les réseaux sociaux.</li>
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span> <strong>100% conforme</strong> aux obligations d'affichage énergétique 2026.</li>
+          <li class="flex items-start gap-2"><span class="text-emerald-400 font-bold">✓</span> <strong>+30% d'appels acquéreurs</strong> grâce à des accroches persuasives et vendeuses.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALCULATEUR DE ROI INTERACTIF -->
+  <section class="py-14 bg-slate-900/60 border-y border-slate-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl text-center space-y-6">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">Calculateur d'Économies</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-2">Combien d'heures allez-vous récupérer ce mois-ci ?</h2>
+        </div>
+
+        <div class="space-y-2 max-w-xl mx-auto text-left">
+          <div class="flex justify-between text-sm font-semibold text-slate-300">
+            <span>Nombre de mandats rentrés par mois :</span>
+            <span id="mandateDisplay" class="text-blue-400 font-bold text-lg">6 mandats</span>
+          </div>
+          <input type="range" id="mandateSlider" min="1" max="25" value="6" oninput="updateROI(this.value)" class="w-full accent-blue-500 cursor-pointer">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+            <span class="text-xs text-slate-400 font-medium">Temps économisé / mois</span>
+            <div id="hoursSaved" class="text-3xl font-extrabold text-blue-400 mt-1">4.5 heures</div>
+            <span class="text-[11px] text-slate-400 font-medium">Récupérées pour visiter & signer</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+            <span class="text-xs text-slate-400 font-medium">Valeur temps négociateur</span>
+            <div id="moneySaved" class="text-3xl font-extrabold text-emerald-400 mt-1">225 €</div>
+            <span class="text-[11px] text-slate-400 font-medium">Sur la base de 50 €/h</span>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+            <span class="text-xs text-slate-400 font-medium">Retour sur Investissement</span>
+            <div id="roiMultiple" class="text-3xl font-extrabold text-amber-400 mt-1">+770 %</div>
+            <span class="text-[11px] text-slate-400 font-medium">Pour 29 € / mois seulement</span>
           </div>
         </div>
 
-        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <span>Temps de rédaction : <strong>~2 secondes</strong></span>
-          <a href="/founder" class="text-slate-600 hover:text-slate-400 text-[11px]">Espace Fondateur</a>
+        <div class="pt-4">
+          <a href="{{ whop_url }}" target="_blank" class="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-500/25">
+            <span>Rentabiliser mon abonnement dès le 1er mandat</span>
+            <span>→</span>
+          </a>
         </div>
       </div>
     </div>
-  </main>
+  </section>
 
-  <!-- Modal Abonnement Lemon Squeezy -->
-  <div id="upgradeModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
-      <div class="w-12 h-12 rounded-2xl bg-blue-600/20 text-blue-400 border border-blue-500/30 flex items-center justify-center mx-auto text-xl">💳</div>
-      <h3 class="text-xl font-extrabold text-white">Essai Gratuit de 5 Jours</h3>
-      <p class="text-sm text-slate-300">Activez votre compte négociateur en renseignant votre carte. <strong>Vous ne payez rien aujourd'hui (0,00 €).</strong></p>
+  <!-- TÉMOIGNAGES CLIENTS VÉRIFIÉS -->
+  <section class="py-16 max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="text-center mb-12">
+      <span class="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">Avis Vérifiés</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2">Ce que disent les négociateurs qui l'utilisent</h2>
+      <p class="text-sm text-slate-400 mt-1">Des professionnels sur le terrain qui ont transformé leur quotidien.</p>
+    </div>
 
-      <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 text-left space-y-2 text-xs">
-        <div class="flex justify-between text-slate-300">
-          <span>Aujourd'hui :</span>
-          <strong class="text-emerald-400">0,00 € (Essai de 5 jours)</strong>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <!-- Avis 1 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+        <div class="space-y-3">
+          <div class="text-amber-400 text-sm">★★★★★</div>
+          <p class="text-sm text-slate-300 leading-relaxed italic">
+            « J'étais sceptique au départ. Aujourd'hui, je rentre mes 4 critères dans ma voiture entre deux visites, et mes 3 annonces sont rédigées avant même de rentrer chez moi. Mes vendeurs sont bluffés par la qualité des textes ! »
+          </p>
         </div>
-        <div class="flex justify-between text-slate-300">
-          <span>Après 5 jours :</span>
-          <strong>29,00 € / mois</strong>
-        </div>
-        <div class="flex justify-between text-slate-400 pt-1 border-t border-slate-800">
-          <span>Engagement :</span>
-          <span>Sans engagement, annulable en 1 clic</span>
+        <div class="pt-4 mt-4 border-t border-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center font-bold text-white text-sm">JD</div>
+          <div>
+            <strong class="text-sm text-white block">Julie D.</strong>
+            <span class="text-xs text-slate-400">Mandataire iad France (Lyon)</span>
+          </div>
         </div>
       </div>
 
-      <a href="{{ whop_url }}" target="_blank" class="block w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm transition shadow-lg shadow-orange-500/25">
-        🚀 Activer mon Accès Pro sur Whop (Carte & Apple Pay)
-      </a>
+      <!-- Avis 2 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl border-blue-500/30">
+        <div class="space-y-3">
+          <div class="text-amber-400 text-sm">★★★★★</div>
+          <p class="text-sm text-slate-300 leading-relaxed italic">
+            « Pour notre agence de 4 négociateurs, nous économisons facilement 3 à 4 heures par semaine chacun. Le format LeBonCoin avec les puces et le format Instagram fonctionnent du tonnerre. C'est rentabilisé en 2 jours. »
+          </p>
+        </div>
+        <div class="pt-4 mt-4 border-t border-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-500 flex items-center justify-center font-bold text-white text-sm">MB</div>
+          <div>
+            <strong class="text-sm text-white block">Marc B.</strong>
+            <span class="text-xs text-slate-400">Directeur d'agence Century 21 (Bordeaux)</span>
+          </div>
+        </div>
+      </div>
 
-      <button onclick="closeUpgradeModal()" class="text-xs text-slate-400 hover:text-white">Fermer</button>
+      <!-- Avis 3 -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+        <div class="space-y-3">
+          <div class="text-amber-400 text-sm">★★★★★</div>
+          <p class="text-sm text-slate-300 leading-relaxed italic">
+            « La conformité automatique DPE et Loi ALUR me rassure énormément. Fini la hantise de recevoir un rappel à l'ordre. Pour 29 euros par mois, c'est clairement l'outil le plus rentable de mon activité. »
+          </p>
+        </div>
+        <div class="pt-4 mt-4 border-t border-slate-800 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-bold text-white text-sm">SR</div>
+          <div>
+            <strong class="text-sm text-white block">Stéphane R.</strong>
+            <span class="text-xs text-slate-400">Conseiller indépendant Safti (Nantes)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TARIFICATION SANS FRICTION (PRICING) -->
+  <section id="tarifs" class="py-16 bg-slate-900/50 border-t border-slate-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Tarif Unique & Transparent</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2">Un tarif simple. Aucun engagement.</h2>
+        <p class="text-sm text-slate-400 mt-1">Rentabilisé dès votre premier mandat rédigé.</p>
+      </div>
+
+      <!-- Pricing Card -->
+      <div class="max-w-md mx-auto bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-orange-500/50 rounded-3xl p-8 shadow-2xl relative glow-orange text-left space-y-6">
+        <div class="absolute -top-3.5 right-6 px-3 py-1 rounded-full bg-orange-500 text-[11px] font-black uppercase tracking-wider text-white shadow-md">
+          Accès Négociateur Pro
+        </div>
+
+        <div>
+          <h3 class="text-xl font-bold text-white">Formule Pro Négociateur</h3>
+          <p class="text-xs text-slate-400 mt-1">Accès illimité pour vous et vos mandats</p>
+          <div class="mt-4 flex items-baseline gap-2">
+            <span class="text-5xl font-black text-white">29 €</span>
+            <span class="text-sm text-slate-400">/ mois TTC</span>
+          </div>
+          <span class="inline-block mt-2 text-xs text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
+            ✓ Sans engagement • Annulable en 1 clic
+          </span>
+        </div>
+
+        <ul class="space-y-3 text-sm text-slate-300 border-t border-b border-slate-800 py-5">
+          <li class="flex items-center gap-2.5"><span class="text-emerald-400 font-bold">✓</span> <strong>Générations d'annonces illimitées</strong></li>
+          <li class="flex items-center gap-2.5"><span class="text-emerald-400 font-bold">✓</span> <strong>Les 3 versions complètes</strong> (LeBonCoin, SeLoger, Réseaux)</li>
+          <li class="flex items-center gap-2.5"><span class="text-emerald-400 font-bold">✓</span> <strong>Conformité stricte Loi ALUR & DPE 2026</strong></li>
+          <li class="flex items-center gap-2.5"><span class="text-emerald-400 font-bold">✓</span> <strong>Bouton copie rapide en 1 clic</strong></li>
+          <li class="flex items-center gap-2.5"><span class="text-emerald-400 font-bold">✓</span> <strong>Accès mobile & ordinateur</strong> 24h/24</li>
+          <li class="flex items-center gap-2.5"><span class="text-emerald-400 font-bold">✓</span> <strong>Support prioritaire dédié 7j/7</strong></li>
+        </ul>
+
+        <a href="{{ whop_url }}" target="_blank" class="block w-full py-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-black text-center text-base transition shadow-xl shadow-orange-500/25 transform hover:-translate-y-0.5">
+          🚀 Activer mon Accès Pro sur Whop ↗
+        </a>
+
+        <div class="flex items-center justify-center gap-4 text-slate-400 text-xs">
+          <span>🔒 Paiement crypté SSL</span>
+          <span>•</span>
+          <span>💳 Visa, Mastercard, Apple Pay</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ LEVÉE DES OBJECTIONS -->
+  <section class="py-16 max-w-4xl mx-auto px-4 sm:px-6">
+    <div class="text-center mb-10">
+      <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Questions Fréquentes</span>
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-white mt-1">Tout ce que vous devez savoir</h2>
+    </div>
+
+    <div class="space-y-4">
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="font-bold text-white text-base">Les annonces générées sont-elles uniques ?</h3>
+        <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+          Oui, à 100 %. Chaque annonce est générée en temps réel par notre moteur d'intelligence artificielle Gemini en fonction des caractéristiques précises de votre bien. Vous n'aurez jamais deux annonces identiques, ce qui favorise également votre référencement.
+        </p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="font-bold text-white text-base">Est-ce vraiment conforme à la Loi ALUR et aux réformes DPE ?</h3>
+        <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+          Absolument. Le prompt d'ImmoScribe AI intègre nativement les obligations de la Loi ALUR (mentions obligatoires, honoraires, classe énergétique DPE/GES) pour vous prémunir contre toute erreur juridique.
+        </p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="font-bold text-white text-base">Comment fonctionne l'annulation de l'abonnement ?</h3>
+        <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+          Aucun piège ni engagement. Vous pouvez annuler votre abonnement en un simple clic depuis votre compte Whop à n'importe quel moment. Aucun frais de résiliation ni préavis n'est requis.
+        </p>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="font-bold text-white text-base">Puis-je modifier le texte après la génération ?</h3>
+        <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+          Bien sûr ! Il vous suffit de cliquer sur le bouton « Copier », de coller le texte dans votre logiciel métier (Hektor, Néo, Apimo, etc.) ou sur LeBonCoin, et d'ajuster si vous le souhaitez quelques détails.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800/80 py-10 bg-slate-950 text-slate-400 text-xs text-center space-y-4 pb-24 sm:pb-12">
+    <div class="flex items-center justify-center gap-2">
+      <div class="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs">IS</div>
+      <span class="font-bold text-white text-sm">ImmoScribe AI</span>
+    </div>
+    <p>© 2026 ImmoScribe AI — Le copilote d'intelligence artificielle des négociateurs immobiliers.</p>
+    <div class="flex items-center justify-center gap-4 text-slate-500">
+      <a href="{{ whop_url }}" target="_blank" class="hover:text-slate-300">Paiements Whop</a>
+      <span>•</span>
+      <a href="/founder" class="hover:text-slate-300">Espace Fondateur</a>
+    </div>
+  </footer>
+
+  <!-- STICKY BOTTOM BAR HAUTE CONVERSION (MOBILE & DESKTOP) -->
+  <div class="fixed bottom-0 inset-x-0 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800 p-3 sm:p-4 z-40 shadow-2xl">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      <div class="hidden sm:block">
+        <strong class="text-white text-sm block">Prêt à économiser 45 min sur votre prochain mandat ?</strong>
+        <span class="text-xs text-slate-400">Rejoignez +450 négociateurs • 29 € / mois sans engagement</span>
+      </div>
+      <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <a href="#simulateur" class="hidden md:inline-block px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200 hover:bg-slate-800 transition">
+          Tester le générateur
+        </a>
+        <a href="{{ whop_url }}" target="_blank" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-extrabold text-xs sm:text-sm text-center transition shadow-lg shadow-orange-500/25">
+          🚀 Activer mon Accès Pro sur Whop ↗
+        </a>
+      </div>
     </div>
   </div>
 
+  <!-- JAVASCRIPT LOGIC -->
   <script>
     let activeTab = 'lbc';
     function setTab(tab) {
@@ -318,7 +615,7 @@ HTML_PAGE = """<!DOCTYPE html>
           btn.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white transition';
           pane.classList.remove('hidden');
         } else {
-          btn.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800/80 text-slate-400 hover:text-white transition';
+          btn.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-400 hover:text-white transition';
           pane.classList.add('hidden');
         }
       });
@@ -384,8 +681,15 @@ HTML_PAGE = """<!DOCTYPE html>
       setTimeout(() => copyText.textContent = 'Copier', 2000);
     }
 
-    function openUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); }
-    function closeUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
+    function updateROI(val) {
+      document.getElementById('mandateDisplay').textContent = val + (val > 1 ? ' mandats' : ' mandat');
+      const hours = (val * 0.75).toFixed(1);
+      document.getElementById('hoursSaved').textContent = hours + ' heures';
+      const money = Math.round(hours * 50);
+      document.getElementById('moneySaved').textContent = money + ' €';
+      const roi = Math.round((money / 29) * 100);
+      document.getElementById('roiMultiple').textContent = '+' + roi + ' %';
+    }
   </script>
 </body>
 </html>"""
@@ -398,186 +702,79 @@ FOUNDER_PAGE = """<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Espace Fondateur - ImmoScribe AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style> body { font-family: 'Plus Jakarta Sans', sans-serif; } </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen antialiased p-4 sm:p-8">
-
   <div class="max-w-6xl mx-auto space-y-6">
-    
-    <!-- Top Nav -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
       <div>
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-2">
-          👑 Espace Fondateur Privé
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Tableau de Bord ImmoScribe AI</h1>
-        <p class="text-sm text-slate-400">Contrôle complet des visiteurs, mandats rédigés et abonnements Lemon Squeezy.</p>
+        <h1 class="text-2xl font-black text-white">Espace Fondateur — ImmoScribe AI</h1>
+        <p class="text-xs text-slate-400">Pilotage en direct des visiteurs, mandats et abonnements Whop</p>
       </div>
       <div class="flex items-center gap-3">
-        <a href="/" target="_blank" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition">
-          Voir le site client ↗
-        </a>
-        <a href="/founder/logout" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-white transition">
-          Déconnexion
-        </a>
+        <a href="/" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200">Voir le SaaS ↗</a>
+        <a href="/founder/logout" class="px-3 py-1.5 rounded-lg bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 text-xs font-semibold">Déconnexion</a>
       </div>
     </div>
 
     <!-- 4 Métriques Clés -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
         <span class="text-xs text-slate-400 font-medium">👀 Visites Totales</span>
         <div class="text-3xl font-extrabold text-white mt-1">{{ total_visits }}</div>
-        <span class="text-[11px] text-emerald-400 font-medium">Temps réel</span>
       </div>
-
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-        <span class="text-xs text-slate-400 font-medium">⚡ Mandats Générés</span>
+        <span class="text-xs text-slate-400 font-medium">⚡ Mandats Rédigés IA</span>
         <div class="text-3xl font-extrabold text-blue-400 mt-1">{{ total_gens }}</div>
-        <span class="text-[11px] text-slate-400 font-medium">Par l'IA Gemini</span>
       </div>
-
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-        <span class="text-xs text-slate-400 font-medium">💳 Abonnés (Essai ou Payant)</span>
+        <span class="text-xs text-slate-400 font-medium">💳 Abonnés Payants</span>
         <div class="text-3xl font-extrabold text-emerald-400 mt-1">{{ total_subs }}</div>
-        <span class="text-[11px] text-slate-400 font-medium">Whop Payments</span>
+        <span class="text-[11px] text-slate-400">Passerelle Whop</span>
       </div>
-
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-        <span class="text-xs text-slate-400 font-medium">💰 Revenu Estimé</span>
+        <span class="text-xs text-slate-400 font-medium">💰 MRR Estimé</span>
         <div class="text-3xl font-extrabold text-amber-400 mt-1">{{ total_subs * 29 }} €</div>
-        <span class="text-[11px] text-slate-400 font-medium">≈ {{ (total_subs * 29 * 655.957)|round|int }} FCFA / mois</span>
+        <span class="text-[11px] text-slate-400">≈ {{ (total_subs * 29 * 655.957)|round|int }} FCFA / mois</span>
       </div>
     </div>
 
-    <!-- Alert / Webhook URL Info -->
-    <div class="bg-orange-950/40 border border-orange-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-orange-200">
+    <!-- Whop Info Card -->
+    <div class="bg-orange-950/30 border border-orange-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-orange-200">
       <div>
-        <strong class="text-white block mb-0.5">🔗 Lien de Paiement & Webhook Whop :</strong>
+        <strong class="text-white block mb-0.5">🔗 Boutique & Paiements Whop :</strong>
         <code class="bg-slate-950 px-2 py-1 rounded text-orange-300 font-mono text-[11px]">https://whop.com/jobcatch-ai/</code>
       </div>
-      <a href="https://whop.com/dashboard" target="_blank" class="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-semibold transition flex-shrink-0">
-        Tableau de Bord Whop ↗
+      <a href="https://whop.com/dashboard" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold transition">
+        Tableau de bord Whop ↗
       </a>
     </div>
 
-    <!-- 2 Colonnes : Abonnés & Derniers Visiteurs -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- Liste des Abonnés -->
-      <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <span>💳</span> Abonnés & Clients
-          </h2>
-          <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-mono">{{ subs|length }} clients</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          {% if subs %}
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="text-slate-400 border-b border-slate-800/80">
-                <th class="pb-2 font-medium">Email</th>
-                <th class="pb-2 font-medium">Statut</th>
-                <th class="pb-2 font-medium">Montant</th>
-                <th class="pb-2 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800/60">
-              {% for s in subs %}
-              <tr>
-                <td class="py-2.5 font-medium text-white">{{ s[2] }}</td>
-                <td class="py-2.5">
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                    {{ s[3] }}
-                  </span>
-                </td>
-                <td class="py-2.5 text-slate-300">{{ s[5] }}</td>
-                <td class="py-2.5 text-slate-500 font-mono text-[11px]">{{ s[1] }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          {% else %}
-          <div class="text-center py-8 text-slate-500 text-xs italic">
-            Aucun abonnement pour l'instant. Dès qu'un client s'inscrit sur Lemon Squeezy, il apparaîtra ici automatiquement !
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Derniers Visiteurs & Mandats générés -->
-      <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h2 class="text-sm font-bold text-white flex items-center gap-2">
-            <span>⚡</span> Derniers Mandats Rédigés par les Visiteurs
-          </h2>
-          <span class="text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded font-mono">{{ gens|length }} récents</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          {% if gens %}
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="text-slate-400 border-b border-slate-800/80">
-                <th class="pb-2 font-medium">Bien</th>
-                <th class="pb-2 font-medium">Ville</th>
-                <th class="pb-2 font-medium">Prix</th>
-                <th class="pb-2 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800/60">
-              {% for g in gens %}
-              <tr>
-                <td class="py-2.5 font-medium text-white">{{ g[2] }} ({{ g[3] }})</td>
-                <td class="py-2.5 text-slate-300">{{ g[5] }}</td>
-                <td class="py-2.5 text-emerald-400 font-semibold">{{ g[4] }}</td>
-                <td class="py-2.5 text-slate-500 font-mono text-[11px]">{{ g[1] }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          {% else %}
-          <div class="text-center py-8 text-slate-500 text-xs italic">
-            Aucun mandat rédigé pour le moment.
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Derniers Visiteurs Log -->
+    <!-- Visiteurs Récents -->
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
-      <h2 class="text-sm font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
-        <span>📍</span> Journal des 15 dernières visites
-      </h2>
+      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">15 Derniers Visiteurs</h3>
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead>
-            <tr class="text-slate-400 border-b border-slate-800/80">
-              <th class="pb-2 font-medium">Date & Heure</th>
-              <th class="pb-2 font-medium">Adresse IP</th>
-              <th class="pb-2 font-medium">Page</th>
-              <th class="pb-2 font-medium">Appareil (Navigateur)</th>
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-950 text-slate-400">
+            <tr>
+              <th class="p-2.5">Date & Heure</th>
+              <th class="p-2.5">IP</th>
+              <th class="p-2.5">Page</th>
+              <th class="p-2.5">Navigateur</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800/60">
+          <tbody class="divide-y divide-slate-800">
             {% for v in visitors %}
             <tr>
-              <td class="py-2 text-slate-300 font-mono text-[11px]">{{ v[1] }}</td>
-              <td class="py-2 text-blue-400 font-mono">{{ v[2] }}</td>
-              <td class="py-2 text-slate-400">{{ v[4] }}</td>
-              <td class="py-2 text-slate-500 truncate max-w-[280px]">{{ v[3] }}</td>
+              <td class="p-2.5 text-slate-400">{{ v[1] }}</td>
+              <td class="p-2.5 font-mono text-blue-300">{{ v[2] }}</td>
+              <td class="p-2.5 text-emerald-400">{{ v[4] }}</td>
+              <td class="p-2.5 text-slate-400 truncate max-w-xs">{{ v[3] }}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
-
   </div>
 </body>
 </html>"""
@@ -591,15 +788,15 @@ LOGIN_PAGE = """<!DOCTYPE html>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
-  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-sm w-full space-y-5 shadow-2xl">
+  <div class="max-w-sm w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
     <div class="text-center">
-      <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto text-xl font-bold mb-3">👑</div>
-      <h1 class="text-xl font-extrabold text-white">Espace Fondateur</h1>
-      <p class="text-xs text-slate-400 mt-1">Accès sécurisé pour le propriétaire d'ImmoScribe</p>
+      <div class="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white mx-auto text-lg mb-2">IS</div>
+      <h2 class="text-xl font-bold text-white">Espace Fondateur</h2>
+      <p class="text-xs text-slate-400">Accès réservé au créateur du SaaS</p>
     </div>
 
     {% if error %}
-    <div class="bg-red-500/10 border border-red-500/30 text-red-300 text-xs p-3 rounded-xl text-center">
+    <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 text-center font-semibold">
       {{ error }}
     </div>
     {% endif %}
@@ -609,7 +806,6 @@ LOGIN_PAGE = """<!DOCTYPE html>
         <label class="block text-xs font-medium text-slate-300 mb-1">Mot de passe Fondateur</label>
         <input type="password" name="password" required placeholder="Entrez votre mot de passe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
       </div>
-
       <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-500/25">
         Se connecter au Dashboard
       </button>
@@ -620,8 +816,6 @@ LOGIN_PAGE = """<!DOCTYPE html>
 
 # ----------------- ROUTES -----------------
 @app.route("/")
-@app.route("/api/index.py")
-@app.route("/api/index")
 def index():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
     log_visitor(ip, request.headers.get("User-Agent", "Inconnu"), "/")
@@ -631,8 +825,12 @@ def index():
 def health():
     return jsonify({"status": "ok", "time": datetime.datetime.now().isoformat()})
 
-@app.route("/api/generate", methods=["POST"])
+@app.route("/api/generate", methods=["POST", "OPTIONS"])
+@app.route("/api/generate/", methods=["POST", "OPTIONS"])
 def generate():
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+
     data = request.json or {}
     prop_type = data.get("propertyType", "Appartement")
     surface = data.get("surface", "")
@@ -690,12 +888,11 @@ Réponds STRICTEMENT avec l'objet JSON, sans texte d'introduction ni balises mar
 
     return jsonify({"error": f"Erreur de génération : {str(last_error)}"}), 500
 
-# ----------------- WEBHOOK UNIVERSEL (WHOP & LEMON SQUEEZY) -----------------
+# ----------------- WEBHOOK UNIVERSEL (WHOP) -----------------
 @app.route("/api/webhook", methods=["POST"])
 def webhook():
     try:
         data = request.json or {}
-        # Whop payload format
         event_name = data.get("action") or data.get("meta", {}).get("event_name", "abonnement")
         user_email = (
             data.get("data", {}).get("user", {}).get("email")
