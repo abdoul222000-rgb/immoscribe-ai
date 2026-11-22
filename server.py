@@ -620,6 +620,8 @@ LOGIN_PAGE = """<!DOCTYPE html>
 
 # ----------------- ROUTES -----------------
 @app.route("/")
+@app.route("/api/index.py")
+@app.route("/api/index")
 def index():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
     log_visitor(ip, request.headers.get("User-Agent", "Inconnu"), "/")
