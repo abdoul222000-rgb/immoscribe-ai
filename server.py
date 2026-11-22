@@ -12,10 +12,15 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_founder_secret_key_2026")
 
 FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "@Abdoul20017")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
-ai_client = genai.Client(api_key=GEMINI_API_KEY)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "https://whop.com/jobcatch-ai/")
+ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "immoscribe.db")
+# Sur Vercel, l'environnement est en lecture seule sauf dans /tmp
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/immoscribe.db"
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "immoscribe.db")
 
 # ----------------- BASE DE DONNÉES DE SUIVI -----------------
 def init_db():
@@ -294,8 +299,8 @@ HTML_PAGE = """<!DOCTYPE html>
         </div>
       </div>
 
-      <a href="https://jobcatch-ai.lemonsqueezy.com/checkout/buy/9c606a64-2673-4eed-995e-c502f75811b6" target="_blank" class="block w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-500/25">
-        Commencer l'essai gratuit de 5 jours (Carte requise)
+      <a href="{{ whop_url }}" target="_blank" class="block w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm transition shadow-lg shadow-orange-500/25">
+        🚀 Activer mon Accès Pro sur Whop (Carte & Apple Pay)
       </a>
 
       <button onclick="closeUpgradeModal()" class="text-xs text-slate-400 hover:text-white">Fermer</button>
@@ -436,7 +441,7 @@ FOUNDER_PAGE = """<!DOCTYPE html>
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
         <span class="text-xs text-slate-400 font-medium">💳 Abonnés (Essai ou Payant)</span>
         <div class="text-3xl font-extrabold text-emerald-400 mt-1">{{ total_subs }}</div>
-        <span class="text-[11px] text-slate-400 font-medium">Lemon Squeezy</span>
+        <span class="text-[11px] text-slate-400 font-medium">Whop Payments</span>
       </div>
 
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
@@ -447,13 +452,13 @@ FOUNDER_PAGE = """<!DOCTYPE html>
     </div>
 
     <!-- Alert / Webhook URL Info -->
-    <div class="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-blue-200">
+    <div class="bg-orange-950/40 border border-orange-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-orange-200">
       <div>
-        <strong class="text-white block mb-0.5">🔗 URL Webhook Lemon Squeezy pour enregistrer chaque client en direct :</strong>
-        <code class="bg-slate-950 px-2 py-1 rounded text-blue-300 font-mono text-[11px]">https://immoscribe-ai-1.onrender.com/api/webhook</code>
+        <strong class="text-white block mb-0.5">🔗 Lien de Paiement & Webhook Whop :</strong>
+        <code class="bg-slate-950 px-2 py-1 rounded text-orange-300 font-mono text-[11px]">https://whop.com/jobcatch-ai/</code>
       </div>
-      <a href="https://app.lemonsqueezy.com/settings/webhooks" target="_blank" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition flex-shrink-0">
-        Configurer Webhook Lemon Squeezy ↗
+      <a href="https://whop.com/dashboard" target="_blank" class="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-semibold transition flex-shrink-0">
+        Tableau de Bord Whop ↗
       </a>
     </div>
 
@@ -618,7 +623,7 @@ LOGIN_PAGE = """<!DOCTYPE html>
 def index():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
     log_visitor(ip, request.headers.get("User-Agent", "Inconnu"), "/")
-    return render_template_string(HTML_PAGE)
+    return render_template_string(HTML_PAGE, whop_url=WHOP_CHECKOUT_URL)
 
 @app.route("/health")
 def health():
@@ -657,6 +662,14 @@ Réponds STRICTEMENT avec l'objet JSON, sans texte d'introduction ni balises mar
     candidate_models = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest"]
     last_error = None
 
+    global ai_client
+    if ai_client is None:
+        key = os.environ.get("GEMINI_API_KEY", "")
+        if key:
+            ai_client = genai.Client(api_key=key)
+        else:
+            return jsonify({"error": "Clé GEMINI_API_KEY manquante dans les variables d'environnement."}), 500
+
     for model in candidate_models:
         try:
             response = ai_client.models.generate_content(
@@ -675,14 +688,21 @@ Réponds STRICTEMENT avec l'objet JSON, sans texte d'introduction ni balises mar
 
     return jsonify({"error": f"Erreur de génération : {str(last_error)}"}), 500
 
-# ----------------- WEBHOOK LEMON SQUEEZY -----------------
+# ----------------- WEBHOOK UNIVERSEL (WHOP & LEMON SQUEEZY) -----------------
 @app.route("/api/webhook", methods=["POST"])
 def webhook():
     try:
         data = request.json or {}
-        event_name = data.get("meta", {}).get("event_name", "evenement")
-        user_email = data.get("data", {}).get("attributes", {}).get("user_email") or data.get("data", {}).get("attributes", {}).get("customer_email") or "client@email.com"
-        status = data.get("data", {}).get("attributes", {}).get("status", "actif")
+        # Whop payload format
+        event_name = data.get("action") or data.get("meta", {}).get("event_name", "abonnement")
+        user_email = (
+            data.get("data", {}).get("user", {}).get("email")
+            or data.get("data", {}).get("email")
+            or data.get("data", {}).get("attributes", {}).get("user_email")
+            or data.get("data", {}).get("attributes", {}).get("customer_email")
+            or "client@immoscribe.ai"
+        )
+        status = data.get("data", {}).get("status") or data.get("data", {}).get("attributes", {}).get("status", "actif")
         
         log_subscription(user_email, status, event_name, "29.00 €")
         return jsonify({"success": True}), 200
