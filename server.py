@@ -819,6 +819,12 @@ LOGIN_PAGE = """<!DOCTYPE html>
 @app.route("/api/index.py", methods=["GET", "POST"])
 @app.route("/api/index", methods=["GET", "POST"])
 def index():
+    if request.args.get("debug"):
+        return jsonify({
+            "headers": dict(request.headers),
+            "environ": {k: str(v) for k, v in request.environ.items() if any(x in k for x in ["PATH", "URI", "ROUTE", "URL", "RAW", "MATCH", "ORIG"])},
+            "path": request.path
+        })
     real_path = (request.headers.get("x-matched-path") or request.headers.get("x-forwarded-uri") or request.path or "").split("?")[0]
     
     if real_path.startswith("/founder/login"):
