@@ -819,6 +819,21 @@ LOGIN_PAGE = """<!DOCTYPE html>
 @app.route("/api/index.py", methods=["GET", "POST"])
 @app.route("/api/index", methods=["GET", "POST"])
 def index():
+    real_path = (request.headers.get("x-matched-path") or request.headers.get("x-forwarded-uri") or request.path or "").split("?")[0]
+    
+    if real_path.startswith("/founder/login"):
+        return founder_login()
+    elif real_path.startswith("/founder/logout"):
+        return founder_logout()
+    elif real_path.startswith("/founder"):
+        return founder_dashboard()
+    elif real_path.startswith("/generate") or real_path.startswith("/api/generate"):
+        return generate()
+    elif real_path.startswith("/api/webhook"):
+        return webhook()
+    elif real_path.startswith("/health"):
+        return health()
+
     if request.method == "POST":
         return generate()
     ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
