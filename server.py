@@ -13,7 +13,9 @@ app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_founder_secret_key_202
 
 FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "@Abdoul20017")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
-WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "https://whop.com/callcatch-ai-ten/immoscribe-ai-acces-pro")
+WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "")
+if not WHOP_CHECKOUT_URL or "jobcatch-ai" in WHOP_CHECKOUT_URL:
+    WHOP_CHECKOUT_URL = "https://whop.com/callcatch-ai-ten/immoscribe-ai-acces-pro"
 ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # Sur Vercel, l'environnement est en lecture seule sauf dans /tmp
