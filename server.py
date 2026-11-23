@@ -580,8 +580,10 @@ HTML_PAGE = """<!DOCTYPE html>
       <span class="font-bold text-white text-sm">ImmoScribe AI</span>
     </div>
     <p>© 2026 ImmoScribe AI — Le copilote d'intelligence artificielle des négociateurs immobiliers.</p>
-    <div class="flex items-center justify-center gap-4 text-slate-500">
+    <div class="flex items-center justify-center gap-4 text-slate-500 flex-wrap">
       <a href="{{ whop_url }}" target="_blank" class="hover:text-slate-300">Paiements Whop</a>
+      <span>•</span>
+      <a href="https://whop.com/immoscribe-ai/affiliates" target="_blank" class="text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1">🤝 Devenir Affilié (25% récurrent)</a>
       <span>•</span>
       <a href="/founder" class="hover:text-slate-300">Espace Fondateur</a>
     </div>
@@ -742,13 +744,24 @@ FOUNDER_PAGE = """<!DOCTYPE html>
 
     <!-- Whop Info Card -->
     <div class="bg-orange-950/30 border border-orange-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-orange-200">
-      <div>
-        <strong class="text-white block mb-0.5">🔗 Boutique & Paiements Whop (ImmoScribe AI) :</strong>
-        <code class="bg-slate-950 px-2 py-1 rounded text-orange-300 font-mono text-[11px]">https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c</code>
+      <div class="space-y-1.5">
+        <div>
+          <strong class="text-white block mb-0.5">🔗 Boutique & Paiements Whop (ImmoScribe AI) :</strong>
+          <code class="bg-slate-950 px-2 py-1 rounded text-orange-300 font-mono text-[11px]">https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c</code>
+        </div>
+        <div>
+          <strong class="text-white block mb-0.5">🤝 Portail Recrutement Affiliés (25% récurrent) :</strong>
+          <code class="bg-slate-950 px-2 py-1 rounded text-amber-300 font-mono text-[11px]">https://whop.com/immoscribe-ai/affiliates</code>
+        </div>
       </div>
-      <a href="https://whop.com/dashboard/biz_sZdXxKJwtTRmqx" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold transition">
-        Tableau de bord Whop ↗
-      </a>
+      <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+        <a href="https://whop.com/immoscribe-ai/affiliates" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800 text-orange-300 font-bold transition text-center">
+          Portail Affiliés ↗
+        </a>
+        <a href="https://whop.com/dashboard/biz_sZdXxKJwtTRmqx" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold transition text-center">
+          Tableau de bord Whop ↗
+        </a>
+      </div>
     </div>
 
     <!-- Visiteurs Récents -->
