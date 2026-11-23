@@ -13,7 +13,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_founder_secret_key_202
 
 FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "@Abdoul20017")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
-WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "https://whop.com/jobcatch-ai/")
+WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "https://whop.com/callcatch-ai-ten/immoscribe-ai-acces-pro")
 ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # Sur Vercel, l'environnement est en lecture seule sauf dans /tmp
@@ -742,7 +742,7 @@ FOUNDER_PAGE = """<!DOCTYPE html>
     <div class="bg-orange-950/30 border border-orange-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-orange-200">
       <div>
         <strong class="text-white block mb-0.5">🔗 Boutique & Paiements Whop :</strong>
-        <code class="bg-slate-950 px-2 py-1 rounded text-orange-300 font-mono text-[11px]">https://whop.com/jobcatch-ai/</code>
+        <code class="bg-slate-950 px-2 py-1 rounded text-orange-300 font-mono text-[11px]">https://whop.com/callcatch-ai-ten/immoscribe-ai-acces-pro</code>
       </div>
       <a href="https://whop.com/dashboard" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold transition">
         Tableau de bord Whop ↗
