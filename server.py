@@ -819,25 +819,21 @@ LOGIN_PAGE = """<!DOCTYPE html>
 @app.route("/api/index.py", methods=["GET", "POST"])
 @app.route("/api/index", methods=["GET", "POST"])
 def index():
-    if request.args.get("debug"):
-        return jsonify({
-            "headers": dict(request.headers),
-            "environ": {k: str(v) for k, v in request.environ.items() if any(x in k for x in ["PATH", "URI", "ROUTE", "URL", "RAW", "MATCH", "ORIG"])},
-            "path": request.path
-        })
-    real_path = (request.headers.get("x-matched-path") or request.headers.get("x-forwarded-uri") or request.path or "").split("?")[0]
+    p = (request.args.get("path") or request.headers.get("x-matched-path") or request.headers.get("x-forwarded-uri") or request.path or "").strip()
+    if p.startswith("/"):
+        p = p[1:]
     
-    if real_path.startswith("/founder/login"):
+    if p == "founder/login" or p.startswith("founder/login"):
         return founder_login()
-    elif real_path.startswith("/founder/logout"):
+    elif p == "founder/logout" or p.startswith("founder/logout"):
         return founder_logout()
-    elif real_path.startswith("/founder"):
+    elif p == "founder" or p.startswith("founder"):
         return founder_dashboard()
-    elif real_path.startswith("/generate") or real_path.startswith("/api/generate"):
+    elif p == "generate" or p.startswith("generate") or p.startswith("api/generate"):
         return generate()
-    elif real_path.startswith("/api/webhook"):
+    elif p == "api/webhook" or p.startswith("api/webhook"):
         return webhook()
-    elif real_path.startswith("/health"):
+    elif p == "health" or p.startswith("health"):
         return health()
 
     if request.method == "POST":
