@@ -9,12 +9,11 @@ from flask import Flask, request, jsonify, render_template_string, redirect, ses
 from google import genai
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_founder_secret_key_2026")
+app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_production_session_key_2026")
 
-FOUNDER_PASSWORD = os.environ.get("FOUNDER_PASSWORD", "@Abdoul20017")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
-WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "")
-if not WHOP_CHECKOUT_URL or "jobcatch-ai" in WHOP_CHECKOUT_URL or "callcatch-ai-ten" in WHOP_CHECKOUT_URL:
+WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c")
+if not WHOP_CHECKOUT_URL:
     WHOP_CHECKOUT_URL = "https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c"
 ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
@@ -24,17 +23,10 @@ if os.environ.get("VERCEL"):
 else:
     DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "immoscribe.db")
 
-# ----------------- BASE DE DONNÉES DE SUIVI -----------------
+# ----------------- BASE DE DONNÉES -----------------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS visitors (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp TEXT,
-        ip TEXT,
-        user_agent TEXT,
-        path TEXT
-    )''')
     c.execute('''CREATE TABLE IF NOT EXISTS generations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp TEXT,
@@ -55,18 +47,6 @@ def init_db():
     conn.close()
 
 init_db()
-
-def log_visitor(ip, user_agent, path):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        c.execute("INSERT INTO visitors (timestamp, ip, user_agent, path) VALUES (?, ?, ?, ?)",
-                  (now, ip, user_agent[:120], path))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print("Erreur log visitor:", e)
 
 def log_generation(prop_type, surface, price, location):
     try:
@@ -584,8 +564,6 @@ HTML_PAGE = """<!DOCTYPE html>
       <a href="{{ whop_url }}" target="_blank" class="hover:text-slate-300">Paiements Whop</a>
       <span>•</span>
       <a href="https://whop.com/immoscribe-ai/affiliates" target="_blank" class="text-orange-400 hover:text-orange-300 font-semibold flex items-center gap-1">🤝 Devenir Affilié (25% récurrent)</a>
-      <span>•</span>
-      <a href="/founder" class="hover:text-slate-300">Espace Fondateur</a>
     </div>
   </footer>
 
@@ -698,137 +676,6 @@ HTML_PAGE = """<!DOCTYPE html>
 </body>
 </html>"""
 
-# ----------------- TEMPLATE ESPACE FOUNDER (DASHBOARD) -----------------
-FOUNDER_PAGE = """<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Espace Fondateur - ImmoScribe AI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen antialiased p-4 sm:p-8">
-  <div class="max-w-6xl mx-auto space-y-6">
-    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-      <div>
-        <h1 class="text-2xl font-black text-white">Espace Fondateur — ImmoScribe AI</h1>
-        <p class="text-xs text-slate-400">Pilotage en direct des visiteurs, mandats et abonnements Whop</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <a href="/" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200">Voir le SaaS ↗</a>
-        <a href="/founder/logout" class="px-3 py-1.5 rounded-lg bg-rose-600/20 text-rose-300 hover:bg-rose-600/30 text-xs font-semibold">Déconnexion</a>
-      </div>
-    </div>
-
-    <!-- 4 Métriques Clés -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-        <span class="text-xs text-slate-400 font-medium">👀 Visites Totales</span>
-        <div class="text-3xl font-extrabold text-white mt-1">{{ total_visits }}</div>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-        <span class="text-xs text-slate-400 font-medium">⚡ Mandats Rédigés IA</span>
-        <div class="text-3xl font-extrabold text-blue-400 mt-1">{{ total_gens }}</div>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-        <span class="text-xs text-slate-400 font-medium">💳 Abonnés Payants</span>
-        <div class="text-3xl font-extrabold text-emerald-400 mt-1">{{ total_subs }}</div>
-        <span class="text-[11px] text-slate-400">Passerelle Whop</span>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-        <span class="text-xs text-slate-400 font-medium">💰 MRR Estimé</span>
-        <div class="text-3xl font-extrabold text-amber-400 mt-1">{{ total_subs * 29 }} €</div>
-        <span class="text-[11px] text-slate-400">≈ {{ (total_subs * 29 * 655.957)|round|int }} FCFA / mois</span>
-      </div>
-    </div>
-
-    <!-- Whop Info Card -->
-    <div class="bg-orange-950/30 border border-orange-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-orange-200">
-      <div class="space-y-1.5">
-        <div>
-          <strong class="text-white block mb-0.5">🔗 Boutique & Paiements Whop (ImmoScribe AI) :</strong>
-          <code class="bg-slate-950 px-2 py-1 rounded text-orange-300 font-mono text-[11px]">https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c</code>
-        </div>
-        <div>
-          <strong class="text-white block mb-0.5">🤝 Portail Recrutement Affiliés (25% récurrent) :</strong>
-          <code class="bg-slate-950 px-2 py-1 rounded text-amber-300 font-mono text-[11px]">https://whop.com/immoscribe-ai/affiliates</code>
-        </div>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-2 shrink-0">
-        <a href="https://whop.com/immoscribe-ai/affiliates" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800 text-orange-300 font-bold transition text-center">
-          Portail Affiliés ↗
-        </a>
-        <a href="https://whop.com/dashboard/biz_sZdXxKJwtTRmqx" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold transition text-center">
-          Tableau de bord Whop ↗
-        </a>
-      </div>
-    </div>
-
-    <!-- Visiteurs Récents -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
-      <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">15 Derniers Visiteurs</h3>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="bg-slate-950 text-slate-400">
-            <tr>
-              <th class="p-2.5">Date & Heure</th>
-              <th class="p-2.5">IP</th>
-              <th class="p-2.5">Page</th>
-              <th class="p-2.5">Navigateur</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-800">
-            {% for v in visitors %}
-            <tr>
-              <td class="p-2.5 text-slate-400">{{ v[1] }}</td>
-              <td class="p-2.5 font-mono text-blue-300">{{ v[2] }}</td>
-              <td class="p-2.5 text-emerald-400">{{ v[4] }}</td>
-              <td class="p-2.5 text-slate-400 truncate max-w-xs">{{ v[3] }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</body>
-</html>"""
-
-LOGIN_PAGE = """<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connexion Fondateur - ImmoScribe AI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
-  <div class="max-w-sm w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
-    <div class="text-center">
-      <div class="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-white mx-auto text-lg mb-2">IS</div>
-      <h2 class="text-xl font-bold text-white">Espace Fondateur</h2>
-      <p class="text-xs text-slate-400">Accès réservé au créateur du SaaS</p>
-    </div>
-
-    {% if error %}
-    <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 text-center font-semibold">
-      {{ error }}
-    </div>
-    {% endif %}
-
-    <form method="POST" action="/founder/login" class="space-y-4">
-      <div>
-        <label class="block text-xs font-medium text-slate-300 mb-1">Mot de passe Fondateur</label>
-        <input type="password" name="password" required placeholder="Entrez votre mot de passe" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-      </div>
-      <button type="submit" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition shadow-lg shadow-blue-500/25">
-        Se connecter au Dashboard
-      </button>
-    </form>
-  </div>
-</body>
-</html>"""
-
 # ----------------- ROUTES -----------------
 @app.route("/", methods=["GET", "POST"])
 @app.route("/api/index.py", methods=["GET", "POST"])
@@ -838,13 +685,7 @@ def index():
     if p.startswith("/"):
         p = p[1:]
     
-    if p == "founder/login" or p.startswith("founder/login"):
-        return founder_login()
-    elif p == "founder/logout" or p.startswith("founder/logout"):
-        return founder_logout()
-    elif p == "founder" or p.startswith("founder"):
-        return founder_dashboard()
-    elif p == "generate" or p.startswith("generate") or p.startswith("api/generate"):
+    if p == "generate" or p.startswith("generate") or p.startswith("api/generate"):
         return generate()
     elif p == "api/webhook" or p.startswith("api/webhook"):
         return webhook()
@@ -853,8 +694,6 @@ def index():
 
     if request.method == "POST":
         return generate()
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip()
-    log_visitor(ip, request.headers.get("User-Agent", "Inconnu"), "/")
     return render_template_string(HTML_PAGE, whop_url=WHOP_CHECKOUT_URL)
 
 @app.route("/health")
@@ -945,58 +784,6 @@ def webhook():
     except Exception as e:
         print("Erreur webhook:", e)
         return jsonify({"error": str(e)}), 400
-
-# ----------------- ESPACE FOUNDER -----------------
-@app.route("/founder/login", methods=["GET", "POST"])
-def founder_login():
-    if request.method == "POST":
-        pwd = request.form.get("password")
-        if pwd == FOUNDER_PASSWORD:
-            session["founder_logged_in"] = True
-            return redirect("/founder")
-        return render_template_string(LOGIN_PAGE, error="Mot de passe incorrect.")
-    return render_template_string(LOGIN_PAGE)
-
-@app.route("/founder/logout")
-def founder_logout():
-    session.pop("founder_logged_in", None)
-    return redirect("/founder/login")
-
-@app.route("/founder")
-def founder_dashboard():
-    if not session.get("founder_logged_in"):
-        return redirect("/founder/login")
-
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM visitors")
-    total_visits = c.fetchone()[0]
-
-    c.execute("SELECT COUNT(*) FROM generations")
-    total_gens = c.fetchone()[0]
-
-    c.execute("SELECT COUNT(*) FROM subscriptions")
-    total_subs = c.fetchone()[0]
-
-    c.execute("SELECT * FROM subscriptions ORDER BY id DESC LIMIT 20")
-    subs = c.fetchall()
-
-    c.execute("SELECT * FROM generations ORDER BY id DESC LIMIT 10")
-    gens = c.fetchall()
-
-    c.execute("SELECT * FROM visitors ORDER BY id DESC LIMIT 15")
-    visitors = c.fetchall()
-    conn.close()
-
-    return render_template_string(
-        FOUNDER_PAGE,
-        total_visits=total_visits,
-        total_gens=total_gens,
-        total_subs=total_subs,
-        subs=subs,
-        gens=gens,
-        visitors=visitors
-    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
