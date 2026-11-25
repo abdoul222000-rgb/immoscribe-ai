@@ -12,9 +12,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "immoscribe_production_session_key_2026")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LVTjt5uwp0_jdvlzckwpr1xMU577yMTgd1GSusAugzDg")
-WHOP_CHECKOUT_URL = os.environ.get("WHOP_CHECKOUT_URL", "https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c")
-if not WHOP_CHECKOUT_URL:
-    WHOP_CHECKOUT_URL = "https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c"
+WHOP_CHECKOUT_URL = "https://whop.com/immoscribe-ai/immoscribe-ai-acces-pro-4c"
 ai_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 # Sur Vercel, l'environnement est en lecture seule sauf dans /tmp
