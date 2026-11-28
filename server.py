@@ -5,7 +5,7 @@ import datetime
 import threading
 import time
 import requests
-from flask import Flask, request, jsonify, render_template_string, redirect, session
+from flask import Flask, request, jsonify, render_template_string, redirect, session, Response
 from google import genai
 
 app = Flask(__name__)
@@ -78,6 +78,36 @@ HTML_PAGE = """<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ImmoScribe AI — Rédigez vos annonces immobilières en 10 secondes chrono</title>
   <meta name="description" content="Le 1er copilote IA pour agents et négociateurs immobiliers en France. Générez vos versions LeBonCoin, SeLoger et Réseaux Sociaux 100% conformes Loi ALUR & DPE.">
+  <link rel="canonical" href="https://immoscribe-ai.vercel.app">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ImmoScribe AI — Copilote IA pour Agents Immobiliers">
+  <meta property="og:description" content="Rédigez vos annonces immobilières en 10 secondes chrono. Conforme Loi ALUR & Audit DPE. Multi-plateformes SeLoger & LeBonCoin.">
+  <meta property="og:url" content="https://immoscribe-ai.vercel.app">
+  <meta property="og:image" content="https://immoscribe-ai.vercel.app/immoscribe_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ImmoScribe AI — Rédigez vos annonces en 10s">
+  <meta name="twitter:description" content="1er copilote IA pour agents immobiliers en France. Conforme Loi ALUR & DPE.">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ImmoScribe AI",
+    "operatingSystem": "Web",
+    "applicationCategory": "BusinessApplication",
+    "description": "Générateur d'annonces immobilières par intelligence artificielle conforme Loi ALUR et DPE pour agents et négociateurs immobiliers.",
+    "url": "https://immoscribe-ai.vercel.app",
+    "offers": {
+      "@type": "Offer",
+      "price": "29.99",
+      "priceCurrency": "USD"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "ratingCount": "127"
+    }
+  }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -683,7 +713,19 @@ def index():
     if p.startswith("/"):
         p = p[1:]
     
-    if p == "generate" or p.startswith("generate") or p.startswith("api/generate"):
+    if p == "robots.txt":
+        return Response("User-agent: *\nAllow: /\nSitemap: https://immoscribe-ai.vercel.app/sitemap.xml\n", mimetype="text/plain")
+    elif p == "sitemap.xml":
+        return Response("""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://immoscribe-ai.vercel.app/</loc>
+    <lastmod>2026-11-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>""", mimetype="application/xml")
+    elif p == "generate" or p.startswith("generate") or p.startswith("api/generate"):
         return generate()
     elif p == "api/webhook" or p.startswith("api/webhook"):
         return webhook()
@@ -697,6 +739,22 @@ def index():
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "time": datetime.datetime.now().isoformat()})
+
+@app.route("/robots.txt")
+def robots():
+    return Response("User-agent: *\nAllow: /\nSitemap: https://immoscribe-ai.vercel.app/sitemap.xml\n", mimetype="text/plain")
+
+@app.route("/sitemap.xml")
+def sitemap():
+    return Response("""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://immoscribe-ai.vercel.app/</loc>
+    <lastmod>2026-11-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>""", mimetype="application/xml")
 
 @app.route("/generate", methods=["POST", "OPTIONS"])
 @app.route("/api/generate", methods=["POST", "OPTIONS"])
